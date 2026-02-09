@@ -57,7 +57,6 @@ export class DokuService {
       };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log(11213123123123, error.response);
         const statusCode = error.response?.status ?? 502;
         const upstreamData = error.response?.data ?? { message: error.message };
         throw new HttpError(statusCode, "DOKU request failed", upstreamData);

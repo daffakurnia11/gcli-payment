@@ -76,26 +76,6 @@ export const buildDokuSignature = ({
   if (requestBody && requestBody !== "") {
     const digest = createBodyDigest(requestBody);
     componentSignature += `\nDigest:${digest}`;
-
-    // Debug logging
-    console.log("=== DOKU Signature Debug ===");
-    console.log("Client-Id:", clientId);
-    console.log("Request-Id:", requestId);
-    console.log("Request-Timestamp:", timestamp);
-    console.log("Request-Target:", requestTarget);
-    console.log("Request Body:", requestBody);
-    console.log("Digest:", digest);
-    console.log("=== Signature Components ===");
-    console.log(componentSignature);
-  } else {
-    // Debug logging for GET requests
-    console.log("=== DOKU Signature Debug (GET) ===");
-    console.log("Client-Id:", clientId);
-    console.log("Request-Id:", requestId);
-    console.log("Request-Timestamp:", timestamp);
-    console.log("Request-Target:", requestTarget);
-    console.log("=== Signature Components ===");
-    console.log(componentSignature);
   }
 
   // Calculate HMAC-SHA256 base64 from the components
@@ -108,10 +88,6 @@ export const buildDokuSignature = ({
 
   // Prepend "HMACSHA256=" to the signature
   const finalSignature = `HMACSHA256=${signature}`;
-
-  console.log("=== Final Signature ===");
-  console.log(finalSignature);
-  console.log("========================");
 
   return finalSignature;
 };
