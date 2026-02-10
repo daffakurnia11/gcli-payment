@@ -53,6 +53,59 @@ export class WebhookService {
     return undefined;
   }
 
+  private async notifyLeagueJoinPaid(params: {
+    invoiceNumber: string;
+    status: string;
+    payload: Record<string, unknown>;
+    requestId: string;
+  }): Promise<void> {
+    if (
+      !env.GCLI_NEXT_BASE_URL ||
+      !params.invoiceNumber.toUpperCase().startsWith('LEAGUE-')
+    ) {
+      return;
+    }
+
+    const endpoint = `${env.GCLI_NEXT_BASE_URL.replace(/\/$/, '')}/api/internal/payments/league/success`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    if (env.INTERNAL_PAYMENT_WEBHOOK_TOKEN) {
+      headers['x-internal-token'] = env.INTERNAL_PAYMENT_WEBHOOK_TOKEN;
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        invoiceNumber: params.invoiceNumber,
+        transactionStatus: params.status,
+        providerPayload: params.payload
+      })
+    });
+
+    const responseBody = (await response.json().catch(() => null)) as
+      | Record<string, unknown>
+      | null;
+
+    await this.auditLogRepository.create({
+      kind: 'webhook',
+      requestId: params.requestId,
+      endpoint,
+      payload: {
+        invoiceNumber: params.invoiceNumber,
+        status: params.status
+      },
+      responsePayload: responseBody ?? { status: response.status },
+      statusCode: response.status,
+      note: response.ok
+        ? 'League join callback delivered'
+        : 'League join callback failed',
+      invoiceNumber: params.invoiceNumber
+    });
+  }
+
   async handleWebhook(payload: HandleWebhookPayload): Promise<{ message: string }> {
     const validSignature = verifyDokuSignature({
       clientId: payload.headers.clientId,
@@ -95,6 +148,31 @@ export class WebhookService {
       note,
       invoiceNumber: this.getInvoiceNumber(payload.body)
     });
+
+    const invoiceNumber = this.getInvoiceNumber(payload.body);
+    if (invoiceNumber && (status === 'SUCCESS' || status === 'PAID')) {
+      try {
+        await this.notifyLeagueJoinPaid({
+          invoiceNumber,
+          status,
+          payload: payload.body,
+          requestId: payload.headers.requestId
+        });
+      } catch (error) {
+        await this.auditLogRepository.create({
+          kind: 'webhook',
+          requestId: payload.headers.requestId,
+          endpoint: env.DOKU_WEBHOOK_PATH,
+          payload: payload.body,
+          statusCode: 500,
+          note:
+            error instanceof Error
+              ? `League join callback exception: ${error.message}`
+              : 'League join callback exception',
+          invoiceNumber
+        });
+      }
+    }
 
     return {
       message: 'Webhook processed'

@@ -13,6 +13,8 @@ const envSchema = z.object({
   DOKU_MODIFY_PAYMENT_PATH: z.string().optional(),
   DOKU_CANCEL_PAYMENT_PATH: z.string().optional(),
   DOKU_WEBHOOK_PATH: z.string().default('/api/webhooks/doku'),
+  GCLI_NEXT_BASE_URL: z.string().url().optional(),
+  INTERNAL_PAYMENT_WEBHOOK_TOKEN: z.string().optional(),
   MARIADB_HOST: z.string().default('127.0.0.1'),
   MARIADB_PORT: z.coerce.number().default(3306),
   MARIADB_USER: z.string().min(1),
