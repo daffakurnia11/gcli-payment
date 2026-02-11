@@ -13,15 +13,15 @@ export class PaymentService {
   async createPayment(payload: Record<string, unknown>): Promise<{ status: number; data: unknown }> {
     const response = await this.dokuService.createPayment(payload);
 
-    // await this.auditLogRepository.create({
-    //   kind: 'payment_create',
-    //   requestId: response.requestId,
-    //   endpoint: '/checkout/v1/payment',
-    //   payload,
-    //   responsePayload: response.data,
-    //   statusCode: response.status,
-    //   invoiceNumber: String(payload.invoice_number ?? '') || undefined
-    // });
+    await this.auditLogRepository.create({
+      kind: 'payment_create',
+      requestId: response.requestId,
+      endpoint: '/checkout/v1/payment',
+      payload,
+      responsePayload: response.data,
+      statusCode: response.status,
+      invoiceNumber: String(payload.invoice_number ?? '') || undefined
+    });
 
     return {
       status: response.status,
